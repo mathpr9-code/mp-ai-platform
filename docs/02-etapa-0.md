@@ -204,15 +204,15 @@ Uma linha por fonte. Sem este mapa não dá para escolher a peça de Investigar 
 
 Das conversas reais saem três coisas: a lista de intenções e atos que de fato aparecem, os termos do `CONTEXT.md` e os primeiros casos do gold set.
 
-## Porte do agente
+## Classe de risco do agente
 
-Primeiro passo do desenho, antes de escolher qualquer peça. O porte define o tamanho de tudo que vem depois: onde o agente roda, quanto de observabilidade, quanto de eval, que guardrails e que rollout. O porte fica registrado no canvas, numa faixa própria, junto com as dificuldades previstas.
+Primeiro passo do desenho, antes de escolher qualquer peça. A classe de risco define o tamanho de tudo que vem depois: onde o agente roda, quanto de observabilidade, quanto de eval, que guardrails e que rollout. Ela mede o estrago que um erro do agente pode causar, não o tamanho do cliente. A classe fica registrada no canvas, numa faixa própria, junto com as dificuldades previstas.
 
 O canvas é feito no Excalidraw (padrão, arquivo no repositório) ou no Figma ou FigJam, quando o desenho for apresentado ao cliente. A ferramenta muda; o conteúdo do quadro é o mesmo.
 
 ### Critérios
 
-| Critério | P (pequeno) | M (médio) | G (grande) |
+| Critério | Baixo | Moderado | Alto |
 | --- | --- | --- | --- |
 | Volume | Até cerca de 1.000 conversas por mês | De 1.000 a 20.000 | Acima de 20.000 |
 | Etapas com LLM | 1 ou 2 | 3 ou 4 | 5 ou mais, ou multiagente |
@@ -221,11 +221,11 @@ O canvas é feito no Excalidraw (padrão, arquivo no repositório) ou no Figma o
 | Dado | Sem dado pessoal relevante | Dado pessoal comum | Dado sensível (saúde, financeiro) |
 | Autonomia | N0 a N1 | N1 a N2 | N2 a N3 |
 
-Regra: o porte é o do critério mais alto. Um único critério G faz o agente G.
+Regra: a classe é a do critério mais alto. Um único critério de risco alto faz o agente de risco alto.
 
-### O que cada porte exige
+### O que cada classe exige
 
-| Item | P | M | G |
+| Item | Baixo | Moderado | Alto |
 | --- | --- | --- | --- |
 | Onde roda | n8n no droplet ou o menor tamanho da plataforma gerenciada | Plataforma gerenciada (App Platform, Container Apps ou ECS) | Plataforma gerenciada com mais de uma réplica e staging dedicado |
 | Banco | Supabase ou Postgres do runtime | Postgres gerenciado do runtime | Postgres gerenciado com alta disponibilidade |
@@ -235,11 +235,11 @@ Regra: o porte é o do critério mais alto. Um único critério G faz o agente G
 | Rollout | Shadow curto, depois total | Shadow e canary | Shadow, canary por porcentagem e expansão |
 | Segurança | Matriz A a J e suite SEC | modelagem de ameaças | revisão em sessão separada e red team antes do go-live |
 
-Ver "Observabilidade por porte e custo" em Monitoramento.
+Ver "Observabilidade por classe de risco e custo" em Monitoramento.
 
 ### Dificuldades previstas
 
-Toda dificuldade vira caixa na faixa de porte, com dono e mitigação. As mais comuns:
+Toda dificuldade vira caixa na faixa de classe de risco, com dono e mitigação. As mais comuns:
 
 - Integração do cliente instável, lenta ou sem API.
 - Dado de origem sujo ou desatualizado.
@@ -428,7 +428,7 @@ Quem assina: o responsável pelo projeto e o **revisor de segurança**. Enquanto
 - [ ] Plano por fases com critério de aceite
 - [ ] Gold set v0 e plano de avaliação por etapa
 - [ ] Ficha do caso de uso com nota de seleção e nível de autonomia
-- [ ] Porte do agente (P, M ou G) e dificuldades previstas registrados no canvas
+- [ ] Classe de risco do agente (baixo, moderado ou alto) e dificuldades previstas registradas no canvas
 - [ ] Ficha de gatilhos preenchida (reativos e proativos)
 - [ ] ADR de stack e de hospedagem (n8n no droplet, ou serviço próprio em App Platform ou Container Apps), ou registro de que o padrão MP foi seguido
 - [ ] Pendências e hipóteses com responsável

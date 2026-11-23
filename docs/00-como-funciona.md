@@ -3,7 +3,7 @@
 O framework transforma o problema de um cliente em um agente construído, medido e publicado, sem partir de um fluxo pronto. Ele funciona em sete movimentos:
 
 1. **Começa pelo problema.** O que o cliente precisa, como o atendimento dele funciona, que dados existem e o que não pode dar errado.
-2. **Etapa 0.** Antes de qualquer prompt: instalar as skills, mapear os dados, classificar o porte do agente, desenhar a arquitetura no quadro (Excalidraw ou Figma) e passar no gate. O desenho e o porte decidem tamanho, robustez, dificuldades e o custo de tudo que vem depois.
+2. **Etapa 0.** Antes de qualquer prompt: instalar as skills, mapear os dados, classificar a classe de risco do agente, desenhar a arquitetura no quadro (Excalidraw ou Figma) e passar no gate. O desenho e a classe de risco decidem tamanho, robustez, dificuldades e o custo de tudo que vem depois.
 3. **O quadro.** Uma coluna de entrada, cinco colunas de etapa (Interpretar, Investigar, Resolver, Esclarecer, Transferir) e as faixas de controle, modelos e onde roda. Em cada coluna você escolhe uma peça do catálogo.
 4. **Cada peça tem por quê e para quê.** O catálogo diz o que a peça resolve, quando escolher, quando não escolher e o que ela exige das outras. A escolha vira hipótese com métrica.
 5. **Os contratos não mudam.** O que cada etapa recebe e entrega é fixo. Por isso dá para trocar o modelo, o tipo de RAG ou o orquestrador sem refazer o agente.

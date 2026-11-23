@@ -291,7 +291,7 @@ A família de modelos (providers e faixas) está em "Escolha de modelo por etapa
 | Estado e histórico | Postgres gerenciado na nuvem do runtime (Managed PostgreSQL da DigitalOcean na App Platform) | Supabase | App com login, storage ou realtime; ver "Banco de dados — onde fica" |
 | Buffer, trava, cache, fila | Valkey ou Redis | — | — |
 | Guardrails | Código + middleware do LangChain | NeMo Guardrails, Azure AI Content Safety | Política de conteúdo complexa ou cliente em Azure |
-| Observabilidade | Langfuse (plano conforme o porte) | LangSmith ou Phoenix; Grafana para infraestrutura | Ver "Observabilidade por porte e custo" |
+| Observabilidade | Langfuse (plano conforme a classe de risco) | LangSmith ou Phoenix; Grafana para infraestrutura | Ver "Observabilidade por classe de risco e custo" |
 | Hospedagem | n8n: Droplet (VPS). Serviço próprio: DigitalOcean App Platform | Azure Container Apps ou AWS ECS Express Mode | Ver "Deploy" |
 
 O padrão existe para que cada agente novo não reabra todas as decisões. Trocar uma linha é permitido, com ADR.
@@ -570,6 +570,6 @@ Fontes: [NeMo Guardrails — Rail types](https://docs.nvidia.com/nemo/guardrails
 | Datasets e experimentos do Langfuse ou do LangSmith | Rodar uma versão contra o gold set e comparar | Padrão |
 | Ragas | Métricas de recuperação e de RAG | Já no catálogo |
 | Simulação de cenários | Usuário simulado por LLM em conversas de várias voltas | Ver "Simulação de cenários" em Evals |
-| promptfoo | CLI e biblioteca MIT para evals e red teaming (injeção de prompt, jailbreak, vazamento de dado). Entrou na OpenAI em 2026 e continua open source | Suíte de segurança e red team no CI, a partir do porte M |
+| promptfoo | CLI e biblioteca MIT para evals e red teaming (injeção de prompt, jailbreak, vazamento de dado). Entrou na OpenAI em 2026 e continua open source | Suíte de segurança e red team no CI, a partir do risco moderado |
 | TestSprite | Agente de teste autônomo, ligado ao agente de código por MCP ou por CLI (a CLI é open source; o MCP exige chave da TestSprite). Lê o código e o PRD, monta plano e testes de front-end e de API, roda na nuvem da TestSprite e devolve o que falhou para o agente de código corrigir | Plataformas e painéis (Prompt Studio, front-ends em Lovable) e contrato HTTP do serviço do agente (webhook e endpoints). Não avalia a qualidade da conversa e não substitui gold set nem suíte de erros. Rodar só em staging com dado fictício, porque o teste roda fora da infraestrutura da MP |
 | DeepEval | Framework de eval | Candidato; não verificado nesta revisão, exige leitura da documentação antes de ADR |

@@ -121,20 +121,20 @@ Fase 8 do ciclo de vida. "Observabilidade" diz o que instrumentar. Esta seção 
 
 Langfuse responde se o agente está bom e quanto custa. Grafana responde se a máquina está de pé. Os dois recebem os dados por OpenTelemetry, então adotar o Grafana não muda a instrumentação.
 
-### Observabilidade por porte e custo
+### Observabilidade por classe de risco e custo
 
-Regra: **uma ferramenta de tracing padrão para todos os agentes: Langfuse.** Assim o time aprende uma só e compara agentes no mesmo lugar. O que muda por porte é o plano e se ela roda na nuvem ou na infraestrutura da MP. Grafana não substitui o tracing de LLM: ele mostra a saúde da infraestrutura e entra quando há serviço próprio com mais de um processo.
+Regra: **uma ferramenta de tracing padrão para todos os agentes: Langfuse.** Assim o time aprende uma só e compara agentes no mesmo lugar. O que muda por classe de risco é o plano e se ela roda na nuvem ou na infraestrutura da MP. Grafana não substitui o tracing de LLM: ele mostra a saúde da infraestrutura e entra quando há serviço próprio com mais de um processo.
 
 | Ferramenta | Licença e hospedagem | Custo (consultado em 23/11/2026) | Quando usar |
 | --- | --- | --- | --- |
-| Langfuse Cloud Hobby | Nuvem | Grátis: 50 mil unidades por mês (traces, observações e scores), 30 dias de dados, 2 usuários | Porte P |
-| Langfuse Cloud Core | Nuvem | US$ 29 por mês com 100 mil unidades; US$ 8 a cada 100 mil extras; 90 dias; usuários ilimitados | Porte M |
-| Langfuse self-host | MIT; Docker Compose ou Kubernetes, com Postgres e ClickHouse | Licença grátis e sem limite de uso; paga a infraestrutura e a operação | Porte G, ou quando o dado não pode sair da infraestrutura |
+| Langfuse Cloud Hobby | Nuvem | Grátis: 50 mil unidades por mês (traces, observações e scores), 30 dias de dados, 2 usuários | Risco baixo |
+| Langfuse Cloud Core | Nuvem | US$ 29 por mês com 100 mil unidades; US$ 8 a cada 100 mil extras; 90 dias; usuários ilimitados | Risco moderado |
+| Langfuse self-host | MIT; Docker Compose ou Kubernetes, com Postgres e ClickHouse | Licença grátis e sem limite de uso; paga a infraestrutura e a operação | Risco alto, ou quando o dado não pode sair da infraestrutura |
 | LangSmith | Nuvem; self-host só no Enterprise | Developer grátis (1 usuário, 5 mil traces por mês); Plus US$ 39 por usuário com 10 mil traces; extra a US$ 2,50 por mil traces | Alternativa quando o time usa o ecossistema LangChain inteiro (deploy, LangGraph) |
 | Arize Phoenix | Source-available (Elastic License 2.0, não é licença OSI); self-host em um container | Grátis no self-host | Alternativa self-host leve |
-| Grafana + OpenLIT | Grafana OSS self-host ou Grafana Cloud | Confira o plano do Grafana Cloud | Infraestrutura e SLO, a partir do porte M com serviço próprio |
+| Grafana + OpenLIT | Grafana OSS self-host ou Grafana Cloud | Confira o plano do Grafana Cloud | Infraestrutura e SLO, a partir do risco moderado com serviço próprio |
 
-Conta rápida: no Langfuse, um turno com oito passos instrumentados gasta cerca de dez unidades. O Hobby cobre perto de 5 mil turnos por mês; acima disso, o agente já é porte M ou vai para self-host. O Langfuse self-host roda no mesmo droplet do n8n só em porte P e M; em porte G, em máquina própria.
+Conta rápida: no Langfuse, um turno com oito passos instrumentados gasta cerca de dez unidades. O Hobby cobre perto de 5 mil turnos por mês; acima disso, o agente já passa ao plano Core ou vai para self-host. O Langfuse self-host roda no mesmo droplet do n8n só nos riscos baixo e moderado; no risco alto, em máquina própria.
 
 Fontes: [Langfuse — Pricing](https://langfuse.com/pricing), [Langfuse — Self-host pricing](https://langfuse.com/pricing-self-host), [LangSmith — Pricing](https://www.langchain.com/pricing), [Arize Phoenix](https://arize.com/docs/phoenix).
 

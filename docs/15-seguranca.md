@@ -262,7 +262,7 @@ mensagem do cliente ou resultado de API
 | --- | --- |
 | 1 e 2. Fundamentos e casos de uso | Classificar o dado e o risco do caso; decidir se dado sensível entra |
 | 3 a 5. Componentes, stack e design | Mapa de dados com classificação; faixa de segurança no canvas; segredos no cofre desde o primeiro commit |
-| 6. Build e teste | Suite SEC verde; red team com promptfoo a partir do porte M |
+| 6. Build e teste | Suite SEC verde; red team com promptfoo a partir do risco moderado |
 | 7. Deploy | Segredos injetados no deploy; webhook autenticado; banco em rede privada |
 | 8. Monitorar | Alerta de vazamento e de uso anômalo de ferramenta; auditoria |
 | 9. Otimizar | Revisão de segurança a cada troca de modelo, prompt ou ferramenta; rotação de chaves |

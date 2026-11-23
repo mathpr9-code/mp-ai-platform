@@ -14,7 +14,7 @@ Nasceu de agentes reais de atendimento no WhatsApp (clínicas, varejo, distribui
 - [As cinco capacidades](#as-cinco-capacidades)
 - [Catálogo de peças](#catálogo-de-peças)
 - [Etapa 0 e o canvas](#etapa-0-e-o-canvas)
-- [Porte do agente: P, M ou G](#porte-do-agente-p-m-ou-g)
+- [Classe de risco do agente](#classe-de-risco-do-agente)
 - [Ciclo de vida: as 9 fases](#ciclo-de-vida-as-9-fases)
 - [Qualidade: todo erro vira caso](#qualidade-todo-erro-vira-caso)
 - [Segurança](#segurança)
@@ -82,17 +82,17 @@ A regra é escolher a peça **mais simples que passa no gold set**. Uma peça ma
 
 Nenhum prompt é escrito antes da Etapa 0. Ela vai do escopo ao gate em dez passos: pasta e quadro, escopo, skills, questionamentos, estrutura do repositório e segredos, mapa de dados (leitura de 50 a 100 conversas reais), desenho, ADRs, testes antes do código e o gate assinado em duas sessões, uma delas de segurança.
 
-O desenho acontece no **Canvas de Arquitetura do Agente**: uma coluna de entrada, cinco colunas de etapa e as faixas de cliente, segurança, controle, modelos e onde roda. Em cada coluna entra **uma peça**, e cada peça entra como **hipótese com métrica e alvo**, contrato versionado e ADR.
+O desenho acontece no **Canvas de Arquitetura do Agente**: uma coluna de entrada e cinco colunas de etapa. Cada coluna mostra **quem faz o quê** (o que é código e o que é LLM; na Entrada, nenhum LLM), a peça escolhida, as candidatas e a **segurança da coluna**, com os casos SEC que ela cobre. Acima, a Decisão em código, que escolhe a próxima etapa; embaixo, as faixas de classe de risco, segredos e dados, controle, modelos por papel, onde roda e gate. Em cada coluna entra **uma peça**, como **hipótese com métrica e alvo**, contrato versionado e ADR.
 
 ![Canvas de Arquitetura do Agente](diagramas/canvas-agente.svg)
 
 O arquivo editável está em [`diagramas/canvas-agente.excalidraw`](diagramas/canvas-agente.excalidraw) (abre no VS Code com a extensão Excalidraw ou em excalidraw.com). O plano de construção sai do quadro: cada coluna preenchida vira uma fase, com entrega e teste próprios. Ver [`docs/02-etapa-0.md`](docs/02-etapa-0.md).
 
-## Porte do agente: P, M ou G
+## Classe de risco do agente
 
-Primeira decisão do desenho. O porte define onde o agente roda, quanto de observabilidade, eval, guardrail e rollout ele exige. **Vale o critério mais alto**: um único critério G faz o agente G.
+Primeira decisão do desenho. A classe mede o estrago que um erro do agente pode causar e define onde ele roda, quanto de observabilidade, eval, guardrail e rollout ele exige. **Vale o critério mais alto**: um único critério de risco alto faz o agente de risco alto.
 
-| Critério | P | M | G |
+| Critério | Baixo | Moderado | Alto |
 | --- | --- | --- | --- |
 | Volume | até ~1.000 conversas/mês | 1.000 a 20.000 | acima de 20.000 |
 | Etapas com LLM | 1 ou 2 | 3 ou 4 | 5+ ou multiagente |
@@ -100,7 +100,7 @@ Primeira decisão do desenho. O porte define onde o agente roda, quanto de obser
 | Dado | sem dado pessoal relevante | dado pessoal comum | dado sensível (saúde, financeiro) |
 | Autonomia | N0–N1 | N1–N2 | N2–N3 |
 
-| Exige | P | M | G |
+| Exige | Baixo | Moderado | Alto |
 | --- | --- | --- | --- |
 | Evals | gold set v0 + suíte de erros | + simulação de cenários e A/B | + juiz online e red team |
 | Rollout | shadow curto, depois total | shadow e canary | shadow, canary por % e expansão |
@@ -148,7 +148,7 @@ Ver [`docs/15-seguranca.md`](docs/15-seguranca.md). A matriz completa de control
 | Evals | gold set próprio, promptfoo, simulação de cenários |
 | Onde roda | n8n em VPS, DigitalOcean App Platform, Azure Container Apps, AWS (ECS, Bedrock AgentCore) |
 
-A escolha é por porte e fica registrada em ADR. Ver [`docs/10-construcao-e-stack.md`](docs/10-construcao-e-stack.md) e [`docs/11-onde-roda-e-deploy.md`](docs/11-onde-roda-e-deploy.md).
+A escolha é pela classe de risco e fica registrada em ADR. Ver [`docs/10-construcao-e-stack.md`](docs/10-construcao-e-stack.md) e [`docs/11-onde-roda-e-deploy.md`](docs/11-onde-roda-e-deploy.md).
 
 ## Implementação de referência
 
@@ -171,7 +171,7 @@ O framework inteiro, sem resumo, está em [`docs/`](docs/). A leitura é de pont
 | --- | --- | --- |
 | 00 | [Como funciona](docs/00-como-funciona.md) | os sete movimentos, as 9 fases, matriz fase × etapa, mapa da arquitetura |
 | 01 | [Fundamentos e casos de uso](docs/01-fundamentos-e-casos-de-uso.md) | o que é um agente, níveis de autonomia, componentes, seleção de casos de uso |
-| 02 | [Etapa 0](docs/02-etapa-0.md) | passo a passo, roteiro de descoberta, mapa de dados, porte, canvas, gate |
+| 02 | [Etapa 0](docs/02-etapa-0.md) | passo a passo, roteiro de descoberta, mapa de dados, classe de risco, canvas, gate |
 | 03 | [Entrada](docs/03-entrada.md) | mídia, buffer, trava por conversa, carga de estado |
 | 04 | [Interpretar](docs/04-interpretar.md) | níveis N1–N3, extratores I1–I9, evidência literal |
 | 05 | [Investigar](docs/05-investigar.md) | SQL/API, RAG em todas as variantes, INV1–INV12 |
