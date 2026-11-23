@@ -135,7 +135,7 @@ Ver [`docs/13-evals-e-otimizacao.md`](docs/13-evals-e-otimizacao.md).
 
 Doze casos de segurança obrigatórios (SEC-001 a SEC-012) entram na suíte antes da primeira linha de código: "sim" lido fora de contexto, instrução injetada na mensagem ou num documento recuperado, tentativa de ler dado de outro cliente, pedido de segredo, mensagem reenviada, requisições simultâneas e ação com consequência sem confirmação. A seção de segurança cobre limites de confiança, prompt injection, segredos em cofre, anonimização antes de chamar modelo, exfiltração, MCP e cadeia de suprimentos, mapeados para o **OWASP Top 10 para Aplicações Agênticas (2026)** e o **OWASP MCP Top 10**.
 
-Ver [`docs/15-seguranca.md`](docs/15-seguranca.md). A matriz completa de controles de plataforma (seções A a Q, prioridades P0 a P3) fica em um repositório próprio.
+Ver [`docs/15-seguranca.md`](docs/15-seguranca.md). A matriz completa de controles da plataforma (seções A a Q, prioridades P0 a P3) está no [Framework de Plataformas](https://github.com/mathpr9-code/framework-plataformas/blob/main/docs/seguranca/matriz-de-seguranca.md).
 
 ## Stack de referência
 
