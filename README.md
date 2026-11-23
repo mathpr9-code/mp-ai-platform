@@ -6,8 +6,6 @@
 
 Nasceu de agentes reais de atendimento no WhatsApp (clínicas, varejo, distribuição B2B, hotelaria e serviços) e foi escrito para resolver o que mais quebrava neles: o "sim" interpretado fora de contexto, a correção que não substituía o dado antigo, a transferência que não acontecia (ou acontecia quando não devia) e o mesmo bug voltando depois de corrigido.
 
-Em produção, a arquitetura roda em **11 agentes**, com mais de **17 mil conversas atendidas desde abril de 2026** (cerca de 1.400 por mês nos agentes de maior volume).
-
 ---
 
 ## Sumário
