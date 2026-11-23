@@ -1,0 +1,23 @@
+id: ERR-0043
+title: '"Não" para a confirmação do agendamento pergunta o que mudar, em vez de encerrar'
+origin: production
+stage: decision
+failure: WRONG_CLOSE
+critical: false
+conversation:
+  - {id: t9,  author: agent,    text: "Posso confirmar sábado às 10h?"}
+  - {id: t10, author: customer, text: "não"}
+state_before:
+  open_question:
+    id: q9
+    kind: yes_no
+    about: confirm_booking
+    on_yes: "execute:create_booking"
+    on_no: ask_what_to_change
+interpretation:
+  evidence: [{id: ev1, turn: t10, quote: "não"}]
+  acts: [denial]
+  answers_to: q9
+expected:
+  conduct: clarify
+  must_not_conduct: [close, execute]

@@ -1,253 +1,196 @@
-# MP AI Platform — a framework for conversational agents that work in production
+# MP AI Platform
 
-> **The LLM reads and writes. The code decides and executes.**
+**Framework de arquitetura para agentes conversacionais em produção.** Transforma o problema de um cliente em um agente desenhado, medido e publicado, sem partir de um fluxo pronto e sem deixar o modelo decidir o que o código deveria decidir.
 
-MP AI Platform is the architecture framework I use to design, build, measure and evolve conversational AI agents (WhatsApp customer service, sales and support). It is the distilled result of building and operating **11+ agents in production, with 17,000+ conversations handled**, and of the bugs those conversations exposed.
+> **O LLM lê e redige. O código decide e executa.**
 
-It is not a prompt, a template or a specific flow. It is a set of **fixed contracts**, a **catalog of interchangeable pieces** for each contract, and a **measurement method** that decides which piece wins for each client.
+Nasceu de agentes reais de atendimento no WhatsApp (clínicas, varejo, distribuição B2B, hotelaria e serviços) e foi escrito para resolver o que mais quebrava neles: o "sim" interpretado fora de contexto, a correção que não substituía o dado antigo, a transferência que não acontecia (ou acontecia quando não devia) e o mesmo bug voltando depois de corrigido.
 
-This repository contains:
-
-| Path | What it is |
-| --- | --- |
-| [`README.md`](README.md) | The framework in one read: the turn, the five capabilities, the lifecycle, the evaluation rules |
-| [`docs/capabilities.md`](docs/capabilities.md) | Deep dive into each stage: contracts, catalog of pieces, failure modes, metrics |
-| [`docs/lifecycle.md`](docs/lifecycle.md) | Stage 0, agent sizing, the 9-phase lifecycle and the gate before any code |
-| [`docs/evaluation.md`](docs/evaluation.md) | Error suite, gold sets, sample size, graders, promotion gate, scenario simulation |
-| [`docs/security.md`](docs/security.md) | Trust boundaries, prompt injection, secrets, privacy, mandatory security cases |
-| [`reference/`](reference/) | A small, runnable Python implementation of the decision layer and the error suite |
+Em produção, a arquitetura roda em **11 agentes**, com mais de **17 mil conversas atendidas desde abril de 2026** (cerca de 1.400 por mês nos agentes de maior volume).
 
 ---
 
-## Why this exists
+## Sumário
 
-My first agents followed the common pattern: receive the message, send it to the LLM, let the model decide what to do. It worked until the flows grew. Then the same problems kept coming back:
-
-- The customer answers **"yes"** to *"Anything else I can help with?"* and the agent transfers to a human, because the "yes" was read without the question that caused it.
-- A change in one part of the prompt silently breaks behavior somewhere else.
-- The agent says *"your appointment is confirmed"* when no system ever confirmed it.
-- The same bug is fixed twice, because nothing remembers it was fixed the first time.
-
-None of these are model-quality problems. They are **architecture** problems: decisions living inside the model, state that is not explicit, and no memory of past failures. This framework moves each responsibility to where it can be controlled and measured.
-
----
-
-## The core idea in three rules
-
-1. **The LLM has maximum intelligence to read and zero authority to decide.** It interprets language and writes replies. Business rules, state, permissions, transfers and actions belong to code.
-2. **Contracts are fixed; pieces are interchangeable.** What each stage receives and returns never changes between clients. Which model, which retrieval strategy or which orchestrator fulfils it can change, without rebuilding the agent.
-3. **Nothing is true until measured, and every error becomes a test.** Pieces and models compete on the same gold set. Every bug found becomes a case in the error suite, and nothing is published unless the whole suite passes.
+- [O turno: seis etapas com contrato fixo](#o-turno-seis-etapas-com-contrato-fixo)
+- [As cinco capacidades](#as-cinco-capacidades)
+- [Catálogo de peças](#catálogo-de-peças)
+- [Etapa 0 e o canvas](#etapa-0-e-o-canvas)
+- [Porte do agente: P, M ou G](#porte-do-agente-p-m-ou-g)
+- [Ciclo de vida: as 9 fases](#ciclo-de-vida-as-9-fases)
+- [Qualidade: todo erro vira caso](#qualidade-todo-erro-vira-caso)
+- [Segurança](#segurança)
+- [Stack de referência](#stack-de-referência)
+- [Implementação de referência](#implementação-de-referência)
+- [Documentação completa](#documentação-completa)
 
 ---
 
-## How a turn works
+## O turno: seis etapas com contrato fixo
 
-Every message goes through an **entry** layer (pure code) and then through up to five capabilities. They are responsibilities, not five LLM calls in a row: a greeting may only need *Interpret* and a reply; a factual question needs *Interpret → Investigate → Resolve*.
+A cada mensagem, o agente percorre só as etapas que o turno precisa. O que cada etapa **recebe e entrega** é fixo; as peças que cumprem o contrato (modelo, tipo de RAG, orquestrador) são intercambiáveis. Por isso dá para trocar o modelo ou a estratégia de busca sem refazer o agente.
 
 ```mermaid
 flowchart LR
-  M([message]) --> B[Entry<br/>webhook, media, buffer, context]
-  B --> I[1 Interpret<br/>LLM reads, code validates]
-  I --> D{{Decision<br/>code: rules, state, policy}}
-  D -->|needs a fact| V[2 Investigate<br/>SQL, API or RAG]
-  V --> R[3 Resolve<br/>code executes, LLM writes]
-  D -->|no lookup needed| R
-  D -->|missing data| E[4 Clarify<br/>code finds the gap, LLM asks]
-  D -->|risk or out of scope| T[5 Transfer<br/>code triggers, LLM summarizes]
-  E -->|new message| I
-  R --> F([Close<br/>reply delivered, state saved])
+  M([mensagem]) --> B[Entrada<br/>webhook, mídia, buffer, contexto]
+  B --> I[1 Interpretar<br/>LLM lê, código valida]
+  I --> D{{Decisão<br/>código: regras, estado, política}}
+  D -->|precisa de fato| V[2 Investigar<br/>SQL, API ou RAG]
+  V --> R[3 Resolver<br/>código executa, LLM redige]
+  D -->|sem consulta| R
+  D -->|falta dado| E[4 Esclarecer<br/>lacuna: código, pergunta: LLM]
+  D -->|risco ou fora do escopo| T[5 Transferir<br/>gatilho: código, resumo: LLM]
+  E -->|nova mensagem| I
+  R --> F([Fechar<br/>resposta entregue, estado salvo])
 ```
 
-Transfer can be triggered from any stage. Underneath everything runs a **control layer**: state, orchestration, context per stage, traces and evals.
+Transferir pode ser disparado de qualquer etapa. Por baixo de tudo corre a **camada de controle**: estado por evento, orquestração, contexto por etapa, traces e evals.
 
-### Entry: most "extractor errors" are born here
+O ponto central é a **Decisão**: o extrator tem inteligência máxima para ler e autoridade zero para decidir. A saída dele não tem campo de "próximo passo" nem de "transferir". Quem decide é uma função de código, determinística e testável, que aplica uma ordem fixa de autoridade:
 
-Before any model sees the message, code does six things: **receive** (validate the webhook and acknowledge immediately), **deduplicate** (provider retries must not become a second reply), **normalize** (transcribe audio, read images and documents, and mark where each text came from), **buffer** (join the three messages a person sends for one sentence into a single turn), **lock** (one execution per conversation at a time) and **load** (history with author and order, state, open questions and the agent's last message).
+1. evidência determinística
+2. estado da conversa
+3. interpretação do LLM **com citação literal** da conversa
+4. na dúvida, abster-se e esclarecer
 
-### The turn is a pair
+## As cinco capacidades
 
-A short answer only means something together with the question that caused it. So every time the agent asks something, **code records what that question opened**:
-
-```json
-{
-  "turn": "t7",
-  "author": "agent",
-  "text": "Anything else I can help you with?",
-  "open_question": {
-    "id": "q7",
-    "kind": "yes_no",
-    "about": "continue_conversation",
-    "on_yes": "await_new_request",
-    "on_no": "close_conversation"
-  }
-}
-```
-
-The extractor receives that last message and returns *which question the reply answers*. Code then applies exactly the effect recorded for that answer, and only that effect:
-
-| The agent said | Customer replied | Read in isolation (wrong) | Read as a pair (right) |
+| Capacidade | Pergunta que responde | Quem faz o quê | Entrega |
 | --- | --- | --- | --- |
-| "Anything else I can help with?" | "yes" | Asks for a human | Wants to continue; ask what |
-| "Want me to connect you to an agent?" | "yes" | Generic confirmation | Accepted the transfer offer |
-| "Shall I confirm Saturday at 10am?" | "no" | Close | Refused; ask what to change |
-| Showed two options | "the second one" | Meaningless | Chose option 2 |
-| No open question | "ok" | Confirms something | Receipt only; triggers nothing |
+| **Interpretar** | O que a pessoa está comunicando, no contexto e no domínio? | LLM lê, código valida | Interpretação estruturada, com evidência citada |
+| **Investigar** | Que fatos, regras ou registros precisam ser consultados? | Código, conectores, retrieval; LLM quando preciso | Evidências autorizadas, atuais e rastreáveis |
+| **Resolver** | O que deve ser feito, dentro das regras? | Código executa, LLM redige | Resposta fundamentada ou ação executada |
+| **Esclarecer** | O que falta ou está ambíguo, e qual a pergunta de menor esforço? | Código acha a lacuna, LLM formula | Uma pergunta objetiva, ou confirmação necessária |
+| **Transferir** | Quando e como outra pessoa deve assumir? | Política + máquina de estados | Handoff explícito, com resumo, rastreável e retomável |
 
-Two rules close the gap for good: **a short reply with no open question never triggers an action**, and **a semantic trigger (like asking for a human) requires an explicit act anchored in a literal quote**.
+Capacidade não é produto: "Investigar" não significa RAG obrigatório, e "Transferir" não significa só chamar um atendente. Cada uma é uma responsabilidade com contrato. Os detalhes estão em [`docs/04-interpretar.md`](docs/04-interpretar.md) a [`docs/08-transferir.md`](docs/08-transferir.md).
 
----
+## Catálogo de peças
 
-## The five capabilities
+Para cada etapa existe um catálogo de peças, cada uma com **o que resolve, quando escolher, quando não escolher e o que exige das outras**. Alguns exemplos:
 
-| Capability | Functional question | Who does what | Output |
-| --- | --- | --- | --- |
-| **1. Interpret** | What is the person communicating, given language, context and domain? | LLM reads; code validates schema, quotes and deterministic evidence | A structured, evidence-backed interpretation |
-| **2. Investigate** | Which facts, rules or records do we need? | Code chooses the source; SQL/API, search or RAG retrieve | Authorized, current, traceable evidence |
-| **3. Resolve** | What should be done, within the rules? | Code decides and executes; LLM writes from a structured act; code verifies | A grounded answer or a confirmed action |
-| **4. Clarify** | What is missing, and which question closes it with the least effort? | Code detects the gap; LLM phrases the question | One objective question or confirmation |
-| **5. Transfer** | When and how should someone else take over? | Policy and state machine decide; LLM writes the summary | Explicit, traceable, resumable handoff |
-
-### 1. Interpret: a translator, not a decision maker
-
-The extractor turns free language into a closed vocabulary that code understands. A simple boundary test decides what belongs to it: *would two people, reading only the conversation and the glossary, without knowing the business rules, reach the same value?* If yes, it is an extractor field (*"the customer corrected the date from Friday to Saturday"*). If it depends on a rule or a system, it is a code field (*"can be rescheduled"*, *"must be transferred"*).
-
-```json
-{
-  "evidence": [{"id": "ev1", "turn": "t18", "quote": "actually we are 5"}],
-  "acts": ["correction"],
-  "intent": "change_reservation",
-  "fields": [{"name": "party_size", "value": 5, "origin": "explicit", "evidence": "ev1"}],
-  "corrections": [{"field": "party_size", "from": 4, "to": 5, "evidence": "ev1"}],
-  "ambiguities": [],
-  "out_of_list": false
-}
-```
-
-What code does with it: validates schema and enums, **checks that every quote exists literally in the cited turn**, cross-checks deterministic evidence (IDs, dates, codes by regex; on conflict, deterministic wins), applies changes to state **as events, never by overwriting**, and only then decides. Business rules, transfer criteria, tool lists and persona never go into the extractor's prompt.
-
-When the extractor fails, the levers are pulled in this order: **contract** (field definitions with contrastive examples), **context** (did the agent's last question arrive?), **room to think** (reasoning effort, evidence fields before conclusions), **decomposition**, and only then **a bigger model** or **fine-tuning**.
-
-### 2. Investigate: start with "where does this fact live?"
-
-Investigate is wider than RAG. The choice follows a ladder; you only go down a step when the current one misses the target on the retrieval gold set:
-
-| Step | Signal | Piece |
+| Etapa | Peças | Exemplos |
 | --- | --- | --- |
-| 0 | Simple, stable rule | Code or versioned config, no search |
-| 1 | The fact is a live record (order, schedule, account) | SQL or API |
-| 2 | Small, stable knowledge base | Whole base in context, with caching |
-| 3 | Exact codes, names, terms | Lexical search (BM25) |
-| 4 | Same thing said many ways | Vector search |
-| 5 | Both signals at once | Hybrid search + reranking |
-| 6 | Questions across relations or the whole corpus | GraphRAG |
-| 7 | Next search depends on the previous one | Agentic RAG, with a step limit |
+| Entrada | M1–M3, B1–B3 | só texto, áudio transcrito, imagem; buffer e janela deslizante; trava por conversa |
+| Interpretar | N1–N3, I1–I9 | classificador, comandos e campos, interpretação completa; extração incremental, seletor + extrator, saída estruturada |
+| Investigar | INV1–INV12 | SQL/API direto, base inteira no contexto, busca híbrida com rerank, Corrective RAG, GraphRAG, Agentic RAG |
+| Resolver | RES1–RES8 | regra/tabela, workflow + LLM, gera + verifica, agente com teto, ação governada |
+| Esclarecer | ESC1–ESC6 | campo faltante, ambiguidade, maior ganho de informação, confirmação, reparo, com humano |
+| Transferir | TR1–TR6 | regra fixa, sinal semântico, pausa e retomada, fila por setor, fallback por timeout |
 
-Around the search, **Corrective RAG** (implemented as a LangGraph graph) evaluates what came back and rewrites the query or tries another source before generating, so "not found" becomes *clarify* or *transfer* instead of an invented answer. Every result carries source, version, authority, timestamp and a status (`found`, `insufficient`, `conflict`, `stale`, `no_access`). Resolve never receives loose text.
+A regra é escolher a peça **mais simples que passa no gold set**. Uma peça mais sofisticada só entra quando a simples perde na medição.
 
-### 3. Resolve: code decides, the LLM writes
+## Etapa 0 e o canvas
 
-Resolve is four steps with different owners: **decide** (code, rule table or state machine), **execute** (code, with validation and idempotency), **write** (LLM, from a structured act) and **verify** (code first, an LLM judge only for semantic criteria).
+Nenhum prompt é escrito antes da Etapa 0. Ela vai do escopo ao gate em dez passos: pasta e quadro, escopo, skills, questionamentos, estrutura do repositório e segredos, mapa de dados (leitura de 50 a 100 conversas reais), desenho, ADRs, testes antes do código e o gate assinado em duas sessões, uma delas de segurança.
 
-```json
-{
-  "act_id": "a1",
-  "action": "confirm_change",
-  "facts": [{"fact_id": "f1", "origin": "machine:reservations_api", "text": "reservation changed to 5 people"}],
-  "must_contain": ["5 people"],
-  "must_not": ["promise a specific table"]
-}
-```
+O desenho acontece no **Canvas de Arquitetura do Agente**: uma coluna de entrada, cinco colunas de etapa e as faixas de cliente, segurança, controle, modelos e onde roda. Em cada coluna entra **uma peça**, e cada peça entra como **hipótese com métrica e alvo**, contrato versionado e ADR.
 
-The writer may only state what is in `facts`. If the verifier rejects the text, there is one retry; if it fails again, a deterministic fallback text is sent. **The customer never receives wrong information and is never left without an answer.** And no action is ever narrated as done without confirmation from the system that executed it.
+![Canvas de Arquitetura do Agente](diagramas/canvas-agente.svg)
 
-### 4. Clarify: the minimum question
+O arquivo editável está em [`diagramas/canvas-agente.excalidraw`](diagramas/canvas-agente.excalidraw) (abre no VS Code com a extensão Excalidraw ou em excalidraw.com). O plano de construção sai do quadro: cada coluna preenchida vira uma fase, com entrega e teste próprios. Ver [`docs/02-etapa-0.md`](docs/02-etapa-0.md).
 
-Code decides that something is missing; the LLM only phrases the question. Before asking, code checks: is it already in the history or state? Can a system answer it? Is the customer the right person to answer, or is the gap internal (then it goes to Transfer)? Defaults to calibrate per client: one question per turn, two attempts at the same gap before transferring, and a list of actions that require confirmation.
+## Porte do agente: P, M ou G
 
-### 5. Transfer and close: a decision machine
+Primeira decisão do desenho. O porte define onde o agente roda, quanto de observabilidade, eval, guardrail e rollout ele exige. **Vale o critério mais alto**: um único critério G faz o agente G.
 
-Every conversation ends in one of three states decided by code: **resolved and closed**, **transferred to a human**, or **abandoned by timeout**. Mandatory triggers (out of scope, human authority, risk above the limit, persistent failure) are rules in code, measured by recall. Semantic triggers (asking for a human, dissatisfaction) are acts flagged by the extractor and applied by policy. **The extractor never returns "transfer".** The handoff package (reason, priority, queue, factual summary, evidence, actions already executed, open points) is assembled from state; only the summary is written by the LLM.
+| Critério | P | M | G |
+| --- | --- | --- | --- |
+| Volume | até ~1.000 conversas/mês | 1.000 a 20.000 | acima de 20.000 |
+| Etapas com LLM | 1 ou 2 | 3 ou 4 | 5+ ou multiagente |
+| Ações | leitura e transferência | escrita reversível | escrita irreversível ou financeira |
+| Dado | sem dado pessoal relevante | dado pessoal comum | dado sensível (saúde, financeiro) |
+| Autonomia | N0–N1 | N1–N2 | N2–N3 |
 
----
+| Exige | P | M | G |
+| --- | --- | --- | --- |
+| Evals | gold set v0 + suíte de erros | + simulação de cenários e A/B | + juiz online e red team |
+| Rollout | shadow curto, depois total | shadow e canary | shadow, canary por % e expansão |
+| Segurança | matriz A–J + suíte SEC | + modelagem de ameaças | + revisão separada e red team antes do go-live |
 
-## The lifecycle: from a client problem to an agent in production
+## Ciclo de vida: as 9 fases
 
-Two axes run at the same time: the **six stages of the turn** say what the agent does with each message; the **nine phases of the lifecycle** say how the agent is born, goes to production and improves.
+O framework tem dois eixos ao mesmo tempo: as **seis etapas do turno** (o que o agente faz a cada mensagem) e as **nove fases do ciclo de vida** (como o projeto nasce, entra em produção e melhora). Uma fase só fecha quando produziu o que cada uma das seis etapas precisa.
 
 ```mermaid
 flowchart LR
-  subgraph S0["Stage 0 — before any prompt or code"]
-    P1[1 Foundations<br/>type and autonomy] --> P2[2 Use case<br/>value and risk]
-    P2 --> P3[3 Components] --> P4[4 Stack<br/>ADR] --> P5[5 Design<br/>canvas, triggers, prompts v0]
+  subgraph E0[Etapa 0]
+    F1[1 Fundamentos<br/>tipo e autonomia] --> F2[2 Casos de uso<br/>valor e risco] --> F3[3 Componentes] --> F4[4 Stack<br/>ADR] --> F5[5 Design<br/>canvas e prompts v0]
   end
-  P5 --> G{Gate}
-  G --> P6[6 Build and test<br/>gold set, error suite, simulation]
-  P6 --> P7[7 Deploy<br/>shadow, canary, go-live]
-  P7 --> P8[8 Monitor<br/>traces, cost, alerts]
-  P8 --> P9[9 Optimize]
-  P9 -->|new case + hypothesis| P6
+  F5 --> F6[6 Build e teste<br/>gold set, suíte verde]
+  F6 --> F7[7 Deploy<br/>shadow, canary, go-live]
+  F7 --> F8[8 Monitorar<br/>custo, qualidade, alertas]
+  F8 --> F9[9 Otimizar<br/>versão nova pelo portão]
+  F9 -->|novo ciclo| F6
 ```
 
-**Stage 0 is mandatory.** No prompt, model or flow is created before four jobs are done: repository and agent skills set up, data mapped (sources, owners, and 50 to 100 real conversations read and annotated), architecture drawn on a canvas (one piece per stage, each as a hypothesis with a metric), and a gate signed, including the security review. The canvas also fixes the **agent's size** (S, M or L by volume, LLM stages, actions, integrations, data sensitivity and autonomy), which sets how much observability, evaluation, guardrails and rollout the agent needs. Details in [`docs/lifecycle.md`](docs/lifecycle.md).
+## Qualidade: todo erro vira caso
 
----
+- **Suíte de erros.** Cada bug encontrado, em produção, em eval ou com o cliente, vira um arquivo YAML com a menor conversa que o reproduz e a conduta esperada. A suíte inteira roda antes de toda publicação. É o que impede corrigir a mesma coisa duas vezes.
+- **Gold set.** Peças e modelos concorrem no mesmo conjunto rotulado. O que ganha entra; o que perde fica registrado como alternativa descartada.
+- **Capacidade e regressão têm alvos opostos.** O conjunto de capacidade mede o que ainda não funciona; o de regressão fica perto de 100%, e qualquer queda indica quebra.
+- **Portão de promoção.** Uma versão nova só substitui a atual se passar na suíte de erros, não piorar o gold set e respeitar o teto de custo e latência.
 
-## Evaluation: nothing is published without proof
+Ver [`docs/13-evals-e-otimizacao.md`](docs/13-evals-e-otimizacao.md).
 
-- **Error suite.** Every error found becomes a case, stored as data (one YAML file), run by a single test runner. The case is written *before* the fix and must fail on the current version. Cases are never deleted. Decision cases run without any model, in milliseconds.
-- **Mandatory security cases** exist from day one: "yes" after a closing question, "ok" with nothing open, prompt injection in the customer message and in retrieved documents, another tenant's ID, personal data in traces, actions narrated without confirmation, duplicated provider messages, concurrent requests.
-- **Gold sets per stage.** Each stage is measured alone before the whole, so you know where to fix. Capability suites start with low scores; regression suites stay near 100%.
-- **Honest sample sizes.** At a 90% hit rate, 100 cases give about ±6 points: you cannot tell 90% from 94%. Splits are by conversation, never by turn.
-- **Promotion gate.** Critical cases with zero tolerance, full error suite and regression green, paired gain on the slice that motivated the change, and cost and latency within budget.
+## Segurança
 
-Full method in [`docs/evaluation.md`](docs/evaluation.md).
+Doze casos de segurança obrigatórios (SEC-001 a SEC-012) entram na suíte antes da primeira linha de código: "sim" lido fora de contexto, instrução injetada na mensagem ou num documento recuperado, tentativa de ler dado de outro cliente, pedido de segredo, mensagem reenviada, requisições simultâneas e ação com consequência sem confirmação. A seção de segurança cobre limites de confiança, prompt injection, segredos em cofre, anonimização antes de chamar modelo, exfiltração, MCP e cadeia de suprimentos, mapeados para o **OWASP Top 10 para Aplicações Agênticas (2026)** e o **OWASP MCP Top 10**.
 
----
+Ver [`docs/15-seguranca.md`](docs/15-seguranca.md). A matriz completa de controles de plataforma (seções A a Q, prioridades P0 a P3) fica em um repositório próprio.
 
-## Try it: the reference implementation
+## Stack de referência
 
-[`reference/`](reference/) is a deliberately small Python implementation of the two ideas that matter most: **the decision layer as a pure function** and **the error suite as data**.
+| Camada | Opções avaliadas no framework |
+| --- | --- |
+| Orquestração | LangGraph, n8n, código próprio |
+| Serviço | FastAPI + worker |
+| Estado e memória | Postgres/Supabase, pgvector, Valkey/Redis |
+| Observabilidade | Langfuse, LangSmith, OpenTelemetry, Grafana |
+| Evals | gold set próprio, promptfoo, simulação de cenários |
+| Onde roda | n8n em VPS, DigitalOcean App Platform, Azure Container Apps, AWS (ECS, Bedrock AgentCore) |
+
+A escolha é por porte e fica registrada em ADR. Ver [`docs/10-construcao-e-stack.md`](docs/10-construcao-e-stack.md) e [`docs/11-onde-roda-e-deploy.md`](docs/11-onde-roda-e-deploy.md).
+
+## Implementação de referência
+
+[`referencia/`](referencia/) traz, em Python, as duas ideias que mais mudaram a qualidade dos agentes:
+
+- **A camada de decisão como função pura** (`decide()`): recebe a interpretação, o estado e a conversa e devolve uma conduta. Sem LLM, sem I/O.
+- **A suíte de erros como dado**: dez casos YAML (quatro da suíte de segurança e seis de regressão), todos passando.
 
 ```bash
-cd reference
-python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+cd referencia
 pip install -e ".[dev]"
 pytest -v
 ```
 
-```text
-tests/error_suite/test_error_suite.py::test_error_case[ERR-0042] PASSED
-tests/error_suite/test_error_suite.py::test_error_case[SEC-001] PASSED
-...
-10 passed
-```
+## Documentação completa
 
-Each test is one YAML file in [`reference/tests/error_suite/cases/`](reference/tests/error_suite/cases/). To register a new bug, add a file; no test code needed. Try breaking a rule in [`decision.py`](reference/src/mp_agent/decision.py) (for example, remove the open-question check) and watch `SEC-001` fail.
+O framework inteiro, sem resumo, está em [`docs/`](docs/). A leitura é de ponta a ponta: as seções se referenciam e uma decisão em uma fase muda as outras.
 
----
-
-## Default stack
-
-The framework does not fix a runtime; the stack below is the default, and changing any line requires an ADR.
-
-| Layer | Default | Alternative |
+| # | Documento | O que cobre |
 | --- | --- | --- |
-| Language / API | Python, FastAPI | TypeScript |
-| Turn runtime | LangGraph | Microsoft Agent Framework |
-| Retrieval | Own code over pgvector | LlamaIndex for complex documents |
-| State and history | Managed Postgres next to the runtime | Supabase |
-| Buffer, lock, cache | Valkey / Redis | — |
-| Observability | Langfuse (plan by agent size) | LangSmith, Phoenix; Grafana for infra |
-| Hosting | n8n on a VPS for small agents; DigitalOcean App Platform for services | Azure Container Apps, AWS ECS |
-| Models | Chosen per stage on the gold set (GPT, Claude, Gemini via API) | — |
+| 00 | [Como funciona](docs/00-como-funciona.md) | os sete movimentos, as 9 fases, matriz fase × etapa, mapa da arquitetura |
+| 01 | [Fundamentos e casos de uso](docs/01-fundamentos-e-casos-de-uso.md) | o que é um agente, níveis de autonomia, componentes, seleção de casos de uso |
+| 02 | [Etapa 0](docs/02-etapa-0.md) | passo a passo, roteiro de descoberta, mapa de dados, porte, canvas, gate |
+| 03 | [Entrada](docs/03-entrada.md) | mídia, buffer, trava por conversa, carga de estado |
+| 04 | [Interpretar](docs/04-interpretar.md) | níveis N1–N3, extratores I1–I9, evidência literal |
+| 05 | [Investigar](docs/05-investigar.md) | SQL/API, RAG em todas as variantes, INV1–INV12 |
+| 06 | [Resolver](docs/06-resolver.md) | regra, workflow, gera + verifica, ação governada |
+| 07 | [Esclarecer](docs/07-esclarecer.md) | campo faltante, ambiguidade, confirmação, reparo |
+| 08 | [Transferir](docs/08-transferir.md) | gatilhos, pausa e retomada, fila, fallback |
+| 09 | [Conduta e persona](docs/09-conduta-e-persona.md) | tom, persona, regras de conversa |
+| 10 | [Construção e stack](docs/10-construcao-e-stack.md) | o que a documentação oficial de cada stack diz |
+| 11 | [Onde roda e deploy](docs/11-onde-roda-e-deploy.md) | hospedagem, custo, rollout |
+| 12 | [Camada de controle](docs/12-camada-de-controle.md) | orquestração, contexto, estado, observabilidade, monitoramento |
+| 13 | [Evals e otimização](docs/13-evals-e-otimizacao.md) | suíte de erros, gold set, graders, portão de promoção |
+| 14 | [Montagem e seleção](docs/14-montagem-e-selecao.md) | ordem de montagem, composições de referência, ADR, checklist |
+| 15 | [Segurança](docs/15-seguranca.md) | OWASP agêntico e MCP, segredos, limites de confiança, testes |
+| — | [Fontes](docs/fontes.md) | documentação oficial e referências usadas em cada decisão |
 
 ---
 
-## Status
+**Autor:** Matheus Pereira Ribeiro · AI Automation Engineer · [LinkedIn](https://www.linkedin.com/in/matheuspereiraribeiro) · [GitHub](https://github.com/mathpr9-code)
 
-The framework is a living document: it is revised as each new agent exposes a new failure. Open questions (extractor intelligence vs. latency, when to leave n8n for a dedicated service, evaluation automation) are tracked in the private working version.
-
-## Author
-
-**Matheus Pereira Ribeiro** — AI Engineer, São Paulo, Brazil.
-[LinkedIn](https://www.linkedin.com/in/matheuspereiraribeiro) · [GitHub](https://github.com/mathpr9-code)
+Exemplos e casos usam dados fictícios. Nenhum dado de cliente está neste repositório.

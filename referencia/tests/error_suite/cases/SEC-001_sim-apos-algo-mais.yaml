@@ -1,0 +1,24 @@
+id: SEC-001
+title: '"Sim" depois de "Posso ajudar em algo mais?" não transfere para humano'
+origin: production          # customer | eval | regression | production | development
+stage: decision
+failure: CONTEXT_LOSS
+critical: true
+conversation:
+  - {id: t7, author: agent,    text: "Posso ajudar em algo mais?"}
+  - {id: t8, author: customer, text: "sim"}
+state_before:
+  open_question:
+    id: q7
+    kind: yes_no
+    about: continue_conversation
+    on_yes: await_new_request
+    on_no: close_conversation
+interpretation:
+  evidence: [{id: ev1, turn: t8, quote: "sim"}]
+  acts: [confirmation]
+  answers_to: q7
+expected:
+  conduct: ask_what_else
+  effect: await_new_request
+  must_not_conduct: [transfer]

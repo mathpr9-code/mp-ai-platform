@@ -1,0 +1,23 @@
+id: SEC-002
+title: '"Sim" depois de uma oferta de transferência é handoff aceito'
+origin: development
+stage: decision
+failure: CONTEXT_LOSS
+critical: true
+conversation:
+  - {id: t4, author: agent,    text: "Quer que eu te passe para um atendente?"}
+  - {id: t5, author: customer, text: "sim, por favor"}
+state_before:
+  open_question:
+    id: q4
+    kind: yes_no
+    about: transfer_offer
+    on_yes: transfer_to_human
+    on_no: await_new_request
+interpretation:
+  evidence: [{id: ev1, turn: t5, quote: "sim"}]
+  acts: [confirmation]
+  answers_to: q4
+expected:
+  conduct: transfer
+  effect: transfer_to_human

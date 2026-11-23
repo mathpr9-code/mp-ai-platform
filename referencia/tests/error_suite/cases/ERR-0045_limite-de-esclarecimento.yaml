@@ -1,0 +1,16 @@
+id: ERR-0045
+title: Depois de dois esclarecimentos sem sucesso, o agente para de perguntar e transfere
+origin: production
+stage: decision
+failure: GENERIC_ASK
+critical: false
+conversation:
+  - {id: t6, author: customer, text: "aquele lá"}
+state_before:
+  clarify_attempts: 2
+interpretation:
+  evidence: [{id: ev1, turn: t6, quote: "aquele lá"}]
+  acts: [inform]
+  ambiguities: ["a referência 'aquele lá' não tem âncora única"]
+expected:
+  conduct: transfer

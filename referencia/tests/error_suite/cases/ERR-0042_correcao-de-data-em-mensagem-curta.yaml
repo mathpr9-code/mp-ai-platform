@@ -1,0 +1,23 @@
+id: ERR-0042
+title: Correção de data em mensagem curta substitui a data antiga
+origin: customer
+stage: decision
+failure: EXTRACT_OMISSION
+critical: false
+conversation:
+  - {id: t1, author: customer, text: "queria marcar pra sexta"}
+  - {id: t2, author: agent,    text: "Sexta, dia 14. Manhã ou tarde?"}
+  - {id: t3, author: customer, text: "na verdade sábado, de manhã"}
+state_before:
+  fields: {date: "2026-11-14"}
+  required_fields: [date, period]
+interpretation:
+  evidence:
+    - {id: ev1, turn: t3, quote: "na verdade sábado"}
+    - {id: ev2, turn: t3, quote: "de manhã"}
+  acts: [correction, inform]
+  corrections: [{field: date, old: "2026-11-14", new: "2026-11-15", evidence: ev1}]
+  fields: [{name: period, value: manha, evidence: ev2}]
+expected:
+  conduct: answer
+  fields: {date: "2026-11-15", period: manha}

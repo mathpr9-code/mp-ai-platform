@@ -1,0 +1,15 @@
+id: SEC-003
+title: '"Ok" sem pergunta aberta não dispara nada'
+origin: development
+stage: decision
+failure: FALSE_RESOLUTION
+critical: true
+conversation:
+  - {id: t2, author: agent,    text: "Nosso endereço é Rua das Flores, 123."}
+  - {id: t3, author: customer, text: "ok"}
+state_before: {}
+interpretation:
+  evidence: [{id: ev1, turn: t3, quote: "ok"}]
+  acts: [confirmation]
+expected:
+  conduct: none

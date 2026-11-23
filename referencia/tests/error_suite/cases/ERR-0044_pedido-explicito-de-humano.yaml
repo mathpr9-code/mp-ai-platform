@@ -1,0 +1,14 @@
+id: ERR-0044
+title: Pedido explícito e citado por um humano é transferido
+origin: customer
+stage: decision
+failure: FALSE_RESOLUTION
+critical: true
+conversation:
+  - {id: t3, author: customer, text: "quero falar com uma pessoa, não com robô"}
+state_before: {}
+interpretation:
+  evidence: [{id: ev1, turn: t3, quote: "quero falar com uma pessoa"}]
+  acts: [asks_for_human]
+expected:
+  conduct: transfer
