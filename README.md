@@ -82,7 +82,7 @@ A regra é escolher a peça **mais simples que passa no gold set**. Uma peça ma
 
 Nenhum prompt é escrito antes da Etapa 0. Ela vai do escopo ao gate em dez passos: pasta e quadro, escopo, skills, questionamentos, estrutura do repositório e segredos, mapa de dados (leitura de 50 a 100 conversas reais), desenho, ADRs, testes antes do código e o gate assinado em duas sessões, uma delas de segurança.
 
-O desenho acontece no **Canvas de Arquitetura do Agente**: uma coluna de entrada e cinco colunas de etapa. Cada coluna mostra **quem faz o quê** (o que é código e o que é LLM; na Entrada, nenhum LLM), a peça escolhida, as candidatas e a **segurança da coluna**, com os casos SEC que ela cobre. Acima, a Decisão em código, que escolhe a próxima etapa; embaixo, as faixas de classe de risco, segredos e dados, controle, modelos por papel, onde roda e gate. Em cada coluna entra **uma peça**, como **hipótese com métrica e alvo**, contrato versionado e ADR.
+O desenho acontece no **Canvas de Arquitetura do Agente**: uma coluna de entrada e cinco colunas de etapa. Cada coluna mostra **quem faz o quê** (o que é código e o que é LLM; na Entrada, o LLM só converte áudio e imagem em texto), a peça escolhida, as candidatas e a **segurança da coluna**, com os casos SEC que ela cobre. Acima, a Decisão em código, que escolhe a próxima etapa; embaixo, as faixas de classe de risco, segredos e dados, controle, modelos por papel, onde roda e gate. Em cada coluna entra **uma peça**, como **hipótese com métrica e alvo**, contrato versionado e ADR.
 
 ![Canvas de Arquitetura do Agente](diagramas/canvas-agente.svg)
 

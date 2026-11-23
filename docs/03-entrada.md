@@ -1,6 +1,6 @@
 # Entrada — do webhook ao Interpretar
 
-Boa parte dos erros atribuídos ao extrator nasce antes dele: mensagem picada, áudio não transcrito, estado não carregado, última fala do agente ausente. A entrada é código, não LLM, e é igual para qualquer agente; o que muda por cliente são as peças de mídia e de buffer.
+Boa parte dos erros atribuídos ao extrator nasce antes dele: mensagem picada, áudio não transcrito, estado não carregado, última fala do agente ausente. A entrada é orquestrada por código e é igual para qualquer agente. O LLM entra aqui só para converter mídia em texto (transcrever áudio, descrever ou ler imagem) e não decide nada: o texto derivado segue marcado com a origem, como dado; o que muda por cliente são as peças de mídia e de buffer.
 
 ## Os seis passos da entrada
 
