@@ -1,0 +1,18 @@
+id: ERR-0046
+title: A missing required field produces one minimal question
+origin: development
+stage: decision
+failure: FALSE_RESOLUTION
+critical: false
+conversation:
+  - {id: t1, author: customer, text: "I want to book a cleaning"}
+state_before:
+  required_fields: [service, date]
+interpretation:
+  evidence: [{id: ev1, turn: t1, quote: "book a cleaning"}]
+  acts: [request]
+  intent: book_appointment
+  fields: [{name: service, value: cleaning, evidence: ev1}]
+expected:
+  conduct: clarify
+  fields: {service: cleaning}

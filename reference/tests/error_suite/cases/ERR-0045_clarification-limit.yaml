@@ -1,0 +1,16 @@
+id: ERR-0045
+title: After two failed clarifications the agent stops asking and hands off
+origin: production
+stage: decision
+failure: GENERIC_ASK
+critical: false
+conversation:
+  - {id: t6, author: customer, text: "that one"}
+state_before:
+  clarify_attempts: 2
+interpretation:
+  evidence: [{id: ev1, turn: t6, quote: "that one"}]
+  acts: [inform]
+  ambiguities: ["reference 'that one' has no single anchor"]
+expected:
+  conduct: transfer

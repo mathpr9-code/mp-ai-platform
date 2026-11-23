@@ -1,0 +1,23 @@
+id: ERR-0042
+title: A date correction in a short message replaces the old date
+origin: customer
+stage: decision
+failure: EXTRACT_OMISSION
+critical: false
+conversation:
+  - {id: t1, author: customer, text: "I'd like to book for friday"}
+  - {id: t2, author: agent,    text: "Friday the 14th. Morning or afternoon?"}
+  - {id: t3, author: customer, text: "saturday actually, morning"}
+state_before:
+  fields: {date: "2026-11-14"}
+  required_fields: [date, period]
+interpretation:
+  evidence:
+    - {id: ev1, turn: t3, quote: "saturday actually"}
+    - {id: ev2, turn: t3, quote: "morning"}
+  acts: [correction, inform]
+  corrections: [{field: date, old: "2026-11-14", new: "2026-11-15", evidence: ev1}]
+  fields: [{name: period, value: morning, evidence: ev2}]
+expected:
+  conduct: answer
+  fields: {date: "2026-11-15", period: morning}

@@ -1,0 +1,23 @@
+id: ERR-0043
+title: '"No" to a booking confirmation asks what to change instead of closing'
+origin: production
+stage: decision
+failure: WRONG_CLOSE
+critical: false
+conversation:
+  - {id: t9,  author: agent,    text: "Shall I confirm Saturday at 10am?"}
+  - {id: t10, author: customer, text: "no"}
+state_before:
+  open_question:
+    id: q9
+    kind: yes_no
+    about: confirm_booking
+    on_yes: "execute:create_booking"
+    on_no: ask_what_to_change
+interpretation:
+  evidence: [{id: ev1, turn: t10, quote: "no"}]
+  acts: [denial]
+  answers_to: q9
+expected:
+  conduct: clarify
+  must_not_conduct: [close, execute]

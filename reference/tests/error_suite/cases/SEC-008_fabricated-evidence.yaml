@@ -1,0 +1,17 @@
+id: SEC-008
+title: An interpretation quoting text that does not exist is rejected
+origin: eval
+stage: decision
+failure: EVIDENCE_FAB
+critical: true
+conversation:
+  - {id: t1, author: customer, text: "I want to book for friday"}
+state_before:
+  required_fields: [date]
+interpretation:
+  evidence: [{id: ev1, turn: t1, quote: "book for saturday"}]
+  acts: [request]
+  intent: book_appointment
+  fields: [{name: date, value: "2026-11-15", evidence: ev1}]
+expected:
+  conduct: clarify
